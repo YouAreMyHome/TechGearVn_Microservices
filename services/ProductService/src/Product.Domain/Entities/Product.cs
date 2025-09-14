@@ -11,10 +11,10 @@ namespace Product.Domain.Entities;
 public class Product : AggregateRoot<Guid>
 {
     // Properties chính của sản phẩm
-    public ProductName Name { get; private set; }
-    public ProductSku Sku { get; private set; }
-    public string Description { get; private set; }
-    public Money Price { get; private set; }
+    public ProductName Name { get; private set; } = default!;
+    public ProductSku Sku { get; private set; } = default!;
+    public string Description { get; private set; } = string.Empty;
+    public Money Price { get; private set; } = default!;
     public int StockQuantity { get; private set; }
     public Guid CategoryId { get; private set; }
     public bool IsActive { get; private set; }
@@ -22,10 +22,10 @@ public class Product : AggregateRoot<Guid>
     // Audit fields
     public DateTime CreatedAt { get; private set; }
     public DateTime? UpdatedAt { get; private set; }
-    public string CreatedBy { get; private set; }
+    public string CreatedBy { get; private set; } = default!;
     public string? UpdatedBy { get; private set; }
 
-    // Constructor for EF Core (không được dùng từ bên ngoài)
+    // Constructor for EF Core (private để không dùng từ bên ngoài)
     private Product() { }
 
     /// <summary>
