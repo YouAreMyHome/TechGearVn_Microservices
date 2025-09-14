@@ -7,8 +7,9 @@ namespace Product.Domain.Entities;
 /// <summary>
 /// Product Aggregate Root - quản lý toàn bộ lifecycle của sản phẩm
 /// Chứa business rules quan trọng: giá cả, tồn kho, trạng thái
+/// Kế thừa AuditableEntity để có sẵn audit fields
 /// </summary>
-public class Product : AggregateRoot<Guid>
+public class Product : AuditableEntity<Guid>
 {
     // Properties chính của sản phẩm
     public ProductName Name { get; private set; } = default!;
@@ -18,12 +19,6 @@ public class Product : AggregateRoot<Guid>
     public int StockQuantity { get; private set; }
     public Guid CategoryId { get; private set; }
     public bool IsActive { get; private set; }
-
-    // Audit fields
-    public DateTime CreatedAt { get; private set; }
-    public DateTime? UpdatedAt { get; private set; }
-    public string CreatedBy { get; private set; } = default!;
-    public string? UpdatedBy { get; private set; }
 
     // Constructor for EF Core (private để không dùng từ bên ngoài)
     private Product() { }
@@ -49,9 +44,6 @@ public class Product : AggregateRoot<Guid>
         if (categoryId == Guid.Empty)
             throw new ArgumentException("CategoryId không được rỗng", nameof(categoryId));
 
-        if (string.IsNullOrWhiteSpace(createdBy))
-            throw new ArgumentException("Người tạo không được để trống", nameof(createdBy));
-
         // Tạo Value Objects với validation
         var productName = ProductName.Create(name);
         var productSku = string.IsNullOrWhiteSpace(sku)
@@ -69,10 +61,11 @@ public class Product : AggregateRoot<Guid>
             Price = productPrice,
             StockQuantity = initialStock,
             CategoryId = categoryId,
-            IsActive = true, // Mặc định active khi tạo mới
-            CreatedAt = DateTime.UtcNow,
-            CreatedBy = createdBy
+            IsActive = true // Mặc định active khi tạo mới
         };
+
+        // Thiết lập audit information từ base class
+        product.SetCreatedAudit(createdBy);
 
         // Phát Domain Event: Sản phẩm đã được tạo
         product.AddDomainEvent(new ProductCreatedEvent(
@@ -92,9 +85,6 @@ public class Product : AggregateRoot<Guid>
     /// </summary>
     public void UpdatePrice(decimal newPrice, string updatedBy)
     {
-        if (string.IsNullOrWhiteSpace(updatedBy))
-            throw new ArgumentException("Người cập nhật không được để trống", nameof(updatedBy));
-
         var oldPrice = Price;
         var newPriceValue = Money.Create(newPrice, Price.Currency);
 
@@ -104,8 +94,9 @@ public class Product : AggregateRoot<Guid>
             throw new InvalidOperationException($"Không thể thay đổi giá quá 50% trong một lần. Thay đổi hiện tại: {changePercentage:P}");
 
         Price = newPriceValue;
-        UpdatedAt = DateTime.UtcNow;
-        UpdatedBy = updatedBy;
+
+        // Cập nhật audit info từ base class
+        SetUpdatedAudit(updatedBy);
 
         // Phát Domain Event: Giá đã thay đổi
         AddDomainEvent(new ProductPriceChangedEvent(
@@ -124,13 +115,11 @@ public class Product : AggregateRoot<Guid>
         if (newQuantity < 0)
             throw new ArgumentException("Số lượng tồn kho không được âm", nameof(newQuantity));
 
-        if (string.IsNullOrWhiteSpace(updatedBy))
-            throw new ArgumentException("Người cập nhật không được để trống", nameof(updatedBy));
-
         var oldQuantity = StockQuantity;
         StockQuantity = newQuantity;
-        UpdatedAt = DateTime.UtcNow;
-        UpdatedBy = updatedBy;
+
+        // Cập nhật audit info từ base class
+        SetUpdatedAudit(updatedBy);
 
         // Phát event khi tồn kho thay đổi
         AddDomainEvent(new ProductStockChangedEvent(
@@ -186,8 +175,7 @@ public class Product : AggregateRoot<Guid>
         if (IsActive) return; // Đã active rồi
 
         IsActive = true;
-        UpdatedAt = DateTime.UtcNow;
-        UpdatedBy = updatedBy;
+        SetUpdatedAudit(updatedBy);
 
         AddDomainEvent(new ProductActivatedEvent(Id, Name.Value, updatedBy));
     }
@@ -200,8 +188,7 @@ public class Product : AggregateRoot<Guid>
         if (!IsActive) return; // Đã inactive rồi
 
         IsActive = false;
-        UpdatedAt = DateTime.UtcNow;
-        UpdatedBy = updatedBy;
+        SetUpdatedAudit(updatedBy);
 
         AddDomainEvent(new ProductDeactivatedEvent(Id, Name.Value, reason, updatedBy));
     }
