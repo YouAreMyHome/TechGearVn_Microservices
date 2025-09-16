@@ -18,4 +18,15 @@ public class ProductNotFoundException : DomainException
         : base($"Không tìm thấy sản phẩm với SKU: {sku}")
     {
     }
+    public ProductNotFoundException(Guid productId, string message)
+        : base(message)
+    {
+        ProductId = productId;
+    }
+
+    public ProductNotFoundException(Guid productId, string message, Exception innerException)
+        : base(message, innerException)
+    {
+        ProductId = productId;
+    }
 }

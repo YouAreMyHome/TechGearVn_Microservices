@@ -80,6 +80,31 @@ public class Product : AuditableEntity<Guid>
     }
 
     /// <summary>
+    /// Cập nhật thông tin cơ bản của sản phẩm
+    /// </summary>
+    public void UpdateDetails(string name, string description, string updatedBy)
+    {
+        if (string.IsNullOrWhiteSpace(updatedBy))
+            throw new ArgumentException("Người cập nhật không được để trống", nameof(updatedBy));
+
+        var oldName = Name.Value;
+        Name = ProductName.Create(name);
+        Description = description?.Trim() ?? string.Empty;
+        UpdatedAt = DateTime.UtcNow;
+        UpdatedBy = updatedBy;
+
+        // Phát event nếu tên thay đổi (có thể ảnh hưởng SEO, catalog...)
+        if (oldName != Name.Value)
+        {
+            AddDomainEvent(new ProductDetailsChangedEvent(
+                Id,
+                oldName,
+                Name.Value,
+                updatedBy));
+        }
+    }
+
+    /// <summary>
     /// Cập nhật giá sản phẩm với business validation
     /// Chỉ cho phép tăng/giảm giá trong khoảng hợp lý
     /// </summary>
