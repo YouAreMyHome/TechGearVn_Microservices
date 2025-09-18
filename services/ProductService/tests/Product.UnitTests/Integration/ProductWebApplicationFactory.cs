@@ -25,9 +25,9 @@ public class ProductWebApplicationFactory : WebApplicationFactory<Program>
         Environment.SetEnvironmentVariable("DB_NAME", "test_db");
         Environment.SetEnvironmentVariable("DB_USERNAME", "test_user");
         Environment.SetEnvironmentVariable("DB_PASSWORD", "test_password");
-        
+
         builder.UseEnvironment("Testing");
-        
+
         builder.ConfigureServices(services =>
         {
             // Remove ALL existing database-related services more thoroughly
@@ -58,13 +58,13 @@ public class ProductWebApplicationFactory : WebApplicationFactory<Program>
     protected override IHost CreateHost(IHostBuilder builder)
     {
         var host = base.CreateHost(builder);
-        
+
         // Initialize test database after application is built
         using var scope = host.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ProductDbContext>();
         context.Database.EnsureCreated();
         SeedTestData(context);
-        
+
         return host;
     }
 

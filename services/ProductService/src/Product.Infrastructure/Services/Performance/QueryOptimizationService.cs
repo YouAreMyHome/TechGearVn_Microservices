@@ -28,12 +28,12 @@ public interface IQueryOptimizationService
 {
     Task<T> OptimizeQuery<T>(Func<Task<T>> query, string queryName, CancellationToken cancellationToken = default);
     Task<(TData data, int totalCount)> OptimizePaginatedQuery<TData>(
-        Func<Task<(TData data, int totalCount)>> query, 
-        int page, 
-        int pageSize, 
+        Func<Task<(TData data, int totalCount)>> query,
+        int page,
+        int pageSize,
         string queryName,
         CancellationToken cancellationToken = default);
-    
+
     int NormalizePageSize(int requestedPageSize);
     (int skip, int take) CalculatePagination(int page, int pageSize);
 }
@@ -126,7 +126,7 @@ public class QueryOptimizationService : IQueryOptimizationService
         // Ensure page is at least 1
         var safePage = Math.Max(1, page);
         var skip = (safePage - 1) * pageSize;
-        
+
         return (skip, pageSize);
     }
 
@@ -193,14 +193,14 @@ public class DatabaseHealthService : IDatabaseHealthService
         try
         {
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-            
+
             // Simple connectivity check
             await _context.Database.ExecuteSqlRawAsync("SELECT 1", cancellationToken);
-            
+
             stopwatch.Stop();
 
             var isHealthy = stopwatch.ElapsedMilliseconds < 5000; // 5 second threshold
-            
+
             if (!isHealthy)
             {
                 _logger.LogWarning("Database health check slow: {ElapsedMs}ms", stopwatch.ElapsedMilliseconds);
@@ -224,7 +224,7 @@ public class DatabaseHealthService : IDatabaseHealthService
         {
             // Test connection
             await _context.Database.ExecuteSqlRawAsync("SELECT 1", cancellationToken);
-            
+
             stopwatch.Stop();
             status.ConnectionTime = stopwatch.Elapsed;
             status.IsHealthy = stopwatch.ElapsedMilliseconds < 5000;
@@ -242,7 +242,7 @@ public class DatabaseHealthService : IDatabaseHealthService
             status.IsHealthy = false;
             status.ConnectionTime = stopwatch.Elapsed;
             status.ErrorMessage = ex.Message;
-            
+
             _logger.LogError(ex, "Database detailed health check failed");
         }
 

@@ -44,12 +44,12 @@ public class MemoryCacheService : ICacheService
             if (_memoryCache.TryGetValue(key, out var cachedValue))
             {
                 _logger.LogDebug("Cache hit for key: {CacheKey}", key);
-                
+
                 if (cachedValue is string json)
                 {
                     return Task.FromResult(JsonSerializer.Deserialize<T>(json));
                 }
-                
+
                 return Task.FromResult(cachedValue as T);
             }
 
@@ -68,7 +68,7 @@ public class MemoryCacheService : ICacheService
         try
         {
             var options = new MemoryCacheEntryOptions();
-            
+
             if (expiration.HasValue)
             {
                 options.AbsoluteExpirationRelativeToNow = expiration.Value;
@@ -109,7 +109,7 @@ public class MemoryCacheService : ICacheService
         try
         {
             _memoryCache.Remove(key);
-            
+
             lock (_lockObject)
             {
                 _cacheKeys.Remove(key);
@@ -130,7 +130,7 @@ public class MemoryCacheService : ICacheService
         try
         {
             List<string> keysToRemove;
-            
+
             lock (_lockObject)
             {
                 keysToRemove = _cacheKeys
@@ -166,7 +166,7 @@ public class MemoryCacheService : ICacheService
         try
         {
             List<string> allKeys;
-            
+
             lock (_lockObject)
             {
                 allKeys = _cacheKeys.ToList();
@@ -208,7 +208,7 @@ public static class CacheKeys
     // Category cache keys
     public static string Category(Guid id) => $"{CATEGORY_PREFIX}:id:{id}";
     public static string CategoryBySlug(string slug) => $"{CATEGORY_PREFIX}:slug:{slug}";
-    public static string CategoryHierarchy(Guid? parentId = null) => 
+    public static string CategoryHierarchy(Guid? parentId = null) =>
         parentId.HasValue ? $"{CATEGORY_PREFIX}:hierarchy:{parentId}" : $"{CATEGORY_PREFIX}:hierarchy:root";
     public static string CategoryChildren(Guid parentId) => $"{CATEGORY_PREFIX}:children:{parentId}";
 

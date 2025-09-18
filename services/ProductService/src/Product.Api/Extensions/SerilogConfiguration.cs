@@ -18,7 +18,7 @@ public static class SerilogConfiguration
     /// - Request enrichment với traceId, userId, etc.
     /// </summary>
     public static IServiceCollection ConfigureSerilog(
-        this IServiceCollection services, 
+        this IServiceCollection services,
         IConfiguration configuration,
         IWebHostEnvironment environment)
     {
@@ -46,7 +46,7 @@ public static class SerilogConfiguration
         if (environment.IsProduction() || environment.IsStaging())
         {
             var logPath = configuration.GetValue<string>("Logging:FilePath") ?? "logs/product-service-.log";
-            
+
             loggerConfig
                 .WriteTo.File(
                     new JsonFormatter(), // Structured JSON logs
@@ -84,7 +84,7 @@ public static class SerilogConfiguration
         return app.UseSerilogRequestLogging(options =>
         {
             options.MessageTemplate = "HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000}ms";
-            
+
             // Enrich logs với additional context
             options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
             {
@@ -92,7 +92,7 @@ public static class SerilogConfiguration
                 diagnosticContext.Set("RequestScheme", httpContext.Request.Scheme);
                 diagnosticContext.Set("UserAgent", httpContext.Request.Headers.UserAgent.FirstOrDefault());
                 diagnosticContext.Set("ClientIP", httpContext.Connection.RemoteIpAddress?.ToString());
-                
+
                 if (httpContext.User.Identity?.IsAuthenticated == true)
                 {
                     diagnosticContext.Set("UserId", httpContext.User.FindFirst("sub")?.Value);

@@ -50,7 +50,7 @@ public class CorrelationIdMiddleware
     private static string GetOrGenerateCorrelationId(HttpContext context)
     {
         // Check if client provided correlation ID
-        if (context.Request.Headers.TryGetValue(CorrelationIdHeaderName, out var correlationId) 
+        if (context.Request.Headers.TryGetValue(CorrelationIdHeaderName, out var correlationId)
             && !string.IsNullOrWhiteSpace(correlationId))
         {
             return correlationId.ToString();

@@ -30,7 +30,7 @@ public class MappingTests
         });
 
         _mapper = configuration.CreateMapper();
-        
+
         // Verify configuration is valid
         configuration.AssertConfigurationIsValid();
     }

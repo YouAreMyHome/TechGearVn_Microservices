@@ -47,7 +47,7 @@ public class ProductsControllerIntegrationTests : IClassFixture<ProductWebApplic
 
         // Assert
         response.Should().BeSuccessful();
-        
+
         var jsonContent = await response.Content.ReadAsStringAsync();
         var jsonDocument = JsonDocument.Parse(jsonContent);
         var root = jsonDocument.RootElement;
@@ -78,7 +78,7 @@ public class ProductsControllerIntegrationTests : IClassFixture<ProductWebApplic
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
-        
+
         var jsonContent = await response.Content.ReadAsStringAsync();
         var jsonDocument = JsonDocument.Parse(jsonContent);
         var root = jsonDocument.RootElement;
@@ -135,7 +135,7 @@ public class ProductsControllerIntegrationTests : IClassFixture<ProductWebApplic
 
         // Assert
         response.Should().BeSuccessful();
-        
+
         var jsonContent = await response.Content.ReadAsStringAsync();
         var jsonDocument = JsonDocument.Parse(jsonContent);
         var root = jsonDocument.RootElement;

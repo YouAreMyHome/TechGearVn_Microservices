@@ -49,16 +49,16 @@ public class CreateProductCommandHandlerTests
 
         // Assert
         result.Should().NotBe(Guid.Empty);
-        
+
         _mockProductRepository.Verify(
-            x => x.AddAsync(It.Is<ProductEntity>(p => 
+            x => x.AddAsync(It.Is<ProductEntity>(p =>
                 p.Name.Value == command.Name &&
                 p.Description == command.Description &&
                 p.Price.Amount == command.PriceAmount &&
                 p.Price.Currency == command.Currency &&
                 p.StockQuantity == command.InitialStock &&
                 p.CategoryId == command.CategoryId
-            ), It.IsAny<CancellationToken>()), 
+            ), It.IsAny<CancellationToken>()),
             Times.Once
         );
     }
@@ -89,12 +89,12 @@ public class CreateProductCommandHandlerTests
 
         // Assert
         result.Should().NotBe(Guid.Empty);
-        
+
         _mockProductRepository.Verify(
-            x => x.AddAsync(It.Is<ProductEntity>(p => 
+            x => x.AddAsync(It.Is<ProductEntity>(p =>
                 p.Name.Value == command.Name &&
                 !string.IsNullOrEmpty(p.Sku.Value) // SKU should be auto-generated
-            ), It.IsAny<CancellationToken>()), 
+            ), It.IsAny<CancellationToken>()),
             Times.Once
         );
     }

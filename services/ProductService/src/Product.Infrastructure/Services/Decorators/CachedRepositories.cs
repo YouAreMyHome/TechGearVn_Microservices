@@ -44,7 +44,7 @@ public class CachedProductRepository : IProductRepository
     public async Task<Domain.Entities.Product?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var cacheKey = $"product:{id}";
-        
+
         var cached = await _cacheService.GetAsync<Domain.Entities.Product>(cacheKey, cancellationToken);
         if (cached != null)
         {
@@ -54,7 +54,7 @@ public class CachedProductRepository : IProductRepository
 
         _logger.LogDebug("Cache miss for Product {ProductId}, fetching from repository", id);
         var product = await _repository.GetByIdAsync(id, cancellationToken);
-        
+
         if (product != null)
         {
             await _cacheService.SetAsync(cacheKey, product, EntityCacheTime, cancellationToken);
@@ -80,7 +80,7 @@ public class CachedProductRepository : IProductRepository
 
         // Invalidate entity cache
         await _cacheService.RemoveAsync($"product:{product.Id}", cancellationToken);
-        
+
         // Invalidate category-related caches
         await InvalidateProductCaches(product.CategoryId);
 
@@ -93,7 +93,7 @@ public class CachedProductRepository : IProductRepository
 
         // Invalidate entity cache
         await _cacheService.RemoveAsync($"product:{productId}", cancellationToken);
-        
+
         // Invalidate all list caches since we don't know the category
         await InvalidateProductCaches();
 
@@ -103,7 +103,7 @@ public class CachedProductRepository : IProductRepository
     public async Task<bool> ExistsAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var cacheKey = $"product_exists:{id}";
-        
+
         var cached = await _cacheService.GetAsync<CachedBool>(cacheKey, cancellationToken);
         if (cached != null) return cached.Value;
 
@@ -116,7 +116,7 @@ public class CachedProductRepository : IProductRepository
     public async Task<Domain.Entities.Product?> GetBySkuAsync(string sku, CancellationToken cancellationToken = default)
     {
         var cacheKey = $"product_sku:{sku}";
-        
+
         var cached = await _cacheService.GetAsync<Domain.Entities.Product>(cacheKey, cancellationToken);
         if (cached != null) return cached;
 
@@ -136,19 +136,19 @@ public class CachedProductRepository : IProductRepository
     }
 
     public async Task<(List<Domain.Entities.Product> products, int totalCount)> GetProductsPagedAsync(
-        int page, int pageSize, List<Guid>? categoryIds = null, decimal? minPrice = null, 
-        decimal? maxPrice = null, string? searchTerm = null, bool onlyActive = true, 
+        int page, int pageSize, List<Guid>? categoryIds = null, decimal? minPrice = null,
+        decimal? maxPrice = null, string? searchTerm = null, bool onlyActive = true,
         string sortBy = "name", string sortDirection = "asc", CancellationToken cancellationToken = default)
     {
         var cacheKey = $"products_paged:{page}:{pageSize}:{string.Join(",", categoryIds ?? new List<Guid>())}:{minPrice}:{maxPrice}:{searchTerm}:{onlyActive}:{sortBy}:{sortDirection}";
-        
+
         // Tạo wrapper class cho tuple
         var cached = await _cacheService.GetAsync<PagedProductsResult>(cacheKey, cancellationToken);
         if (cached != null) return (cached.Products, cached.TotalCount);
 
-        var result = await _repository.GetProductsPagedAsync(page, pageSize, categoryIds, minPrice, maxPrice, 
+        var result = await _repository.GetProductsPagedAsync(page, pageSize, categoryIds, minPrice, maxPrice,
             searchTerm, onlyActive, sortBy, sortDirection, cancellationToken);
-        
+
         await _cacheService.SetAsync(cacheKey, new PagedProductsResult(result.products, result.totalCount), QueryCacheTime, cancellationToken);
         return result;
     }
@@ -156,7 +156,7 @@ public class CachedProductRepository : IProductRepository
     public async Task<List<Domain.Entities.Product>> GetLowStockProductsAsync(int threshold = 10, CancellationToken cancellationToken = default)
     {
         var cacheKey = $"low_stock_products:{threshold}";
-        
+
         var cached = await _cacheService.GetAsync<List<Domain.Entities.Product>>(cacheKey, cancellationToken);
         if (cached != null) return cached;
 
@@ -169,7 +169,7 @@ public class CachedProductRepository : IProductRepository
     public async Task<List<Domain.Entities.Product>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         var cacheKey = "products_all";
-        
+
         var cached = await _cacheService.GetAsync<List<Domain.Entities.Product>>(cacheKey, cancellationToken);
         if (cached != null) return cached;
 
@@ -182,7 +182,7 @@ public class CachedProductRepository : IProductRepository
     public async Task<List<Domain.Entities.Product>> GetByCategoryAsync(Guid categoryId, CancellationToken cancellationToken = default)
     {
         var cacheKey = $"products_category:{categoryId}";
-        
+
         var cached = await _cacheService.GetAsync<List<Domain.Entities.Product>>(cacheKey, cancellationToken);
         if (cached != null) return cached;
 
@@ -195,7 +195,7 @@ public class CachedProductRepository : IProductRepository
     public async Task<List<Domain.Entities.Product>> GetByPriceRangeAsync(decimal minPrice, decimal maxPrice, string currency, CancellationToken cancellationToken = default)
     {
         var cacheKey = $"products_price_range:{minPrice}:{maxPrice}:{currency}";
-        
+
         var cached = await _cacheService.GetAsync<List<Domain.Entities.Product>>(cacheKey, cancellationToken);
         if (cached != null) return cached;
 
@@ -208,7 +208,7 @@ public class CachedProductRepository : IProductRepository
     public async Task<List<Domain.Entities.Product>> GetActiveProductsAsync(CancellationToken cancellationToken = default)
     {
         var cacheKey = "products_active";
-        
+
         var cached = await _cacheService.GetAsync<List<Domain.Entities.Product>>(cacheKey, cancellationToken);
         if (cached != null) return cached;
 
@@ -221,7 +221,7 @@ public class CachedProductRepository : IProductRepository
     public async Task<List<Domain.Entities.Product>> SearchByNameAsync(string searchTerm, CancellationToken cancellationToken = default)
     {
         var cacheKey = $"products_search:{searchTerm}";
-        
+
         var cached = await _cacheService.GetAsync<List<Domain.Entities.Product>>(cacheKey, cancellationToken);
         if (cached != null) return cached;
 
@@ -235,7 +235,7 @@ public class CachedProductRepository : IProductRepository
     {
         var idsList = ids.ToList();
         var cacheKey = $"products_by_ids:{string.Join(",", idsList)}";
-        
+
         var cached = await _cacheService.GetAsync<List<Domain.Entities.Product>>(cacheKey, cancellationToken);
         if (cached != null) return cached;
 
@@ -248,7 +248,7 @@ public class CachedProductRepository : IProductRepository
     public async Task<int> CountByCategoryAsync(Guid categoryId, CancellationToken cancellationToken = default)
     {
         var cacheKey = $"products_count_category:{categoryId}";
-        
+
         var cached = await _cacheService.GetAsync<CachedInt>(cacheKey, cancellationToken);
         if (cached != null) return cached.Value;
 
@@ -261,7 +261,7 @@ public class CachedProductRepository : IProductRepository
     public async Task<decimal> GetTotalInventoryValueAsync(string currency, CancellationToken cancellationToken = default)
     {
         var cacheKey = $"total_inventory_value:{currency}";
-        
+
         var cached = await _cacheService.GetAsync<CachedDecimal>(cacheKey, cancellationToken);
         if (cached != null) return cached.Value;
 
@@ -337,7 +337,7 @@ public class CachedCategoryRepository : ICategoryRepository
     public async Task<Category?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var cacheKey = $"category:{id}";
-        
+
         var cached = await _cacheService.GetAsync<Category>(cacheKey, cancellationToken);
         if (cached != null) return cached;
 
@@ -353,7 +353,7 @@ public class CachedCategoryRepository : ICategoryRepository
     public async Task<Category?> GetBySlugAsync(string slug, CancellationToken cancellationToken = default)
     {
         var cacheKey = $"category_slug:{slug}";
-        
+
         var cached = await _cacheService.GetAsync<Category>(cacheKey, cancellationToken);
         if (cached != null) return cached;
 
@@ -369,7 +369,7 @@ public class CachedCategoryRepository : ICategoryRepository
     public async Task<List<Category>> GetAllActiveAsync(CancellationToken cancellationToken = default)
     {
         var cacheKey = "categories_all_active";
-        
+
         var cached = await _cacheService.GetAsync<List<Category>>(cacheKey, cancellationToken);
         if (cached != null) return cached;
 
@@ -382,7 +382,7 @@ public class CachedCategoryRepository : ICategoryRepository
     public async Task<(List<Category> categories, int totalCount)> GetPagedAsync(int pageNumber, int pageSize, string? searchTerm = null, bool? isActive = null, Guid? parentId = null, CancellationToken cancellationToken = default)
     {
         var cacheKey = $"categories_paged:{pageNumber}:{pageSize}:{searchTerm}:{isActive}:{parentId}";
-        
+
         var cached = await _cacheService.GetAsync<PagedCategoriesResult>(cacheKey, cancellationToken);
         if (cached != null) return (cached.Categories, cached.TotalCount);
 
@@ -395,7 +395,7 @@ public class CachedCategoryRepository : ICategoryRepository
     public async Task<List<Category>> GetCategoryHierarchyAsync(Guid? rootId = null, bool includeInactive = false, int maxDepth = 5, CancellationToken cancellationToken = default)
     {
         var cacheKey = $"category_hierarchy:{rootId}:{includeInactive}:{maxDepth}";
-        
+
         var cached = await _cacheService.GetAsync<List<Category>>(cacheKey, cancellationToken);
         if (cached != null) return cached;
 
@@ -408,7 +408,7 @@ public class CachedCategoryRepository : ICategoryRepository
     public async Task<List<Category>> GetCategoryPathAsync(Guid categoryId, CancellationToken cancellationToken = default)
     {
         var cacheKey = $"category_path:{categoryId}";
-        
+
         var cached = await _cacheService.GetAsync<List<Category>>(cacheKey, cancellationToken);
         if (cached != null) return cached;
 
@@ -421,7 +421,7 @@ public class CachedCategoryRepository : ICategoryRepository
     public async Task<List<Guid>> GetDescendantIdsAsync(Guid categoryId, CancellationToken cancellationToken = default)
     {
         var cacheKey = $"category_descendant_ids:{categoryId}";
-        
+
         var cached = await _cacheService.GetAsync<List<Guid>>(cacheKey, cancellationToken);
         if (cached != null) return cached;
 
@@ -434,7 +434,7 @@ public class CachedCategoryRepository : ICategoryRepository
     public async Task<List<Category>> GetChildrenAsync(Guid parentId, bool includeInactive = false, CancellationToken cancellationToken = default)
     {
         var cacheKey = $"category_children:{parentId}:{includeInactive}";
-        
+
         var cached = await _cacheService.GetAsync<List<Category>>(cacheKey, cancellationToken);
         if (cached != null) return cached;
 
@@ -447,7 +447,7 @@ public class CachedCategoryRepository : ICategoryRepository
     public async Task<bool> HasProductsAsync(Guid categoryId, CancellationToken cancellationToken = default)
     {
         var cacheKey = $"category_has_products:{categoryId}";
-        
+
         var cached = await _cacheService.GetAsync<CachedBool>(cacheKey, cancellationToken);
         if (cached != null) return cached.Value;
 
@@ -460,7 +460,7 @@ public class CachedCategoryRepository : ICategoryRepository
     public async Task<bool> HasSubCategoriesAsync(Guid categoryId, CancellationToken cancellationToken = default)
     {
         var cacheKey = $"category_has_subcategories:{categoryId}";
-        
+
         var cached = await _cacheService.GetAsync<CachedBool>(cacheKey, cancellationToken);
         if (cached != null) return cached.Value;
 
@@ -484,12 +484,12 @@ public class CachedCategoryRepository : ICategoryRepository
     public async Task UpdateAsync(Category category, CancellationToken cancellationToken = default)
     {
         await _repository.UpdateAsync(category, cancellationToken);
-        
+
         // Invalidate entity và hierarchy caches
         await _cacheService.RemoveAsync($"category:{category.Id}", cancellationToken);
         await _cacheService.RemoveAsync($"category_slug:{category.Slug}", cancellationToken);
         await InvalidateCategoryCaches(category.ParentId);
-        
+
         _logger.LogDebug("Updated Category {CategoryId} and invalidated caches", category.Id);
     }
 
@@ -512,7 +512,7 @@ public class CachedCategoryRepository : ICategoryRepository
     public async Task<int> GetProductCountAsync(Guid categoryId, CancellationToken cancellationToken = default)
     {
         var cacheKey = $"category_product_count:{categoryId}";
-        
+
         var cached = await _cacheService.GetAsync<CachedInt>(cacheKey, cancellationToken);
         if (cached != null) return cached.Value;
 
@@ -525,7 +525,7 @@ public class CachedCategoryRepository : ICategoryRepository
     public async Task<int> GetActiveProductCountAsync(Guid categoryId, CancellationToken cancellationToken = default)
     {
         var cacheKey = $"category_active_product_count:{categoryId}";
-        
+
         var cached = await _cacheService.GetAsync<CachedInt>(cacheKey, cancellationToken);
         if (cached != null) return cached.Value;
 
@@ -538,7 +538,7 @@ public class CachedCategoryRepository : ICategoryRepository
     public async Task<int> GetSubCategoriesCountAsync(Guid categoryId, CancellationToken cancellationToken = default)
     {
         var cacheKey = $"category_subcategories_count:{categoryId}";
-        
+
         var cached = await _cacheService.GetAsync<CachedInt>(cacheKey, cancellationToken);
         if (cached != null) return cached.Value;
 
@@ -551,7 +551,7 @@ public class CachedCategoryRepository : ICategoryRepository
     public async Task<int> GetDescendantsCountAsync(Guid categoryId, CancellationToken cancellationToken = default)
     {
         var cacheKey = $"category_descendants_count:{categoryId}";
-        
+
         var cached = await _cacheService.GetAsync<CachedInt>(cacheKey, cancellationToken);
         if (cached != null) return cached.Value;
 

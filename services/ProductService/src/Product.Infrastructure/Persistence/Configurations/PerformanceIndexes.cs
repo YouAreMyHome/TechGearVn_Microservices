@@ -55,15 +55,15 @@ public static class PerformanceIndexes
 
         // Index cho category + price range (category browsing với price filter)
         productEntity.HasIndex(
-                nameof(Domain.Entities.Product.CategoryId), 
-                "Price_Amount", 
+                nameof(Domain.Entities.Product.CategoryId),
+                "Price_Amount",
                 nameof(Domain.Entities.Product.IsActive))
             .HasDatabaseName("IX_products_category_price_active")
             .HasAnnotation("Comment", "Category browsing with price filtering");
 
         // Index cho stock alerts (low stock products query)
         productEntity.HasIndex(
-                nameof(Domain.Entities.Product.IsActive), 
+                nameof(Domain.Entities.Product.IsActive),
                 nameof(Domain.Entities.Product.StockQuantity))
             .HasDatabaseName("IX_products_active_stock")
             .HasAnnotation("Comment", "Active products stock monitoring");
@@ -75,22 +75,22 @@ public static class PerformanceIndexes
 
         // Composite index cho hierarchy traversal
         categoryEntity.HasIndex(
-                nameof(Domain.Entities.Category.ParentId), 
-                nameof(Domain.Entities.Category.IsActive), 
+                nameof(Domain.Entities.Category.ParentId),
+                nameof(Domain.Entities.Category.IsActive),
                 nameof(Domain.Entities.Category.DisplayOrder))
             .HasDatabaseName("IX_categories_parent_active_order")
             .HasAnnotation("Comment", "Category hierarchy with ordering");
 
         // Index cho level-based queries (breadcrumb generation)
         categoryEntity.HasIndex(
-                nameof(Domain.Entities.Category.Level), 
+                nameof(Domain.Entities.Category.Level),
                 nameof(Domain.Entities.Category.IsActive))
             .HasDatabaseName("IX_categories_level_active")
             .HasAnnotation("Comment", "Level-based category queries");
 
         // Index cho category navigation (path-based lookups)
         categoryEntity.HasIndex(
-                nameof(Domain.Entities.Category.Path), 
+                nameof(Domain.Entities.Category.Path),
                 nameof(Domain.Entities.Category.IsActive))
             .HasDatabaseName("IX_categories_path_active")
             .HasAnnotation("Comment", "Path-based category navigation");
@@ -131,7 +131,7 @@ public static class DatabaseOptimizations
     {
         // Products table optimizations
         modelBuilder.Entity<Domain.Entities.Product>()
-            .ToTable("products", options => 
+            .ToTable("products", options =>
             {
                 options.HasComment("Main products table with performance optimizations");
             });

@@ -46,7 +46,7 @@ public class ProductTests
         product.CategoryId.Should().Be(categoryId);
         product.IsActive.Should().BeTrue();
         product.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(1));
-        
+
         // Verify domain event was raised
         product.DomainEvents.Should().HaveCount(1);
         product.DomainEvents.First().Should().BeOfType<ProductCreatedEvent>();
@@ -57,7 +57,7 @@ public class ProductTests
     {
         // Arrange
         var product = CreateTestProduct();
-        
+
         // Act
         var isLowStock = product.IsLowStock();
 
@@ -70,7 +70,7 @@ public class ProductTests
     {
         // Arrange
         var product = CreateTestProduct();
-        
+
         // Act
         var isOutOfStock = product.IsOutOfStock();
 

@@ -49,7 +49,7 @@ public class GlobalExceptionHandlingMiddlewareTests
         var context = CreateHttpContext();
         var productId = Guid.NewGuid();
         var exception = new ProductNotFoundException(productId);
-        
+
         _nextMock.Setup(x => x(It.IsAny<HttpContext>()))
                  .ThrowsAsync(exception);
 
@@ -59,11 +59,11 @@ public class GlobalExceptionHandlingMiddlewareTests
         // Assert
         context.Response.StatusCode.Should().Be(404);
         context.Response.ContentType.Should().Be("application/json");
-        
+
         var responseBody = await GetResponseBodyAsync(context);
-        var problemDetails = JsonSerializer.Deserialize<ProblemDetails>(responseBody, 
+        var problemDetails = JsonSerializer.Deserialize<ProblemDetails>(responseBody,
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-        
+
         problemDetails!.Title.Should().Be("Sản phẩm không tồn tại");
         problemDetails.Status.Should().Be(404);
         problemDetails.Detail.Should().Contain(productId.ToString());
@@ -76,7 +76,7 @@ public class GlobalExceptionHandlingMiddlewareTests
         var context = CreateHttpContext();
         var sku = "TEST-SKU-001";
         var exception = new ProductSkuAlreadyExistsException(sku);
-        
+
         _nextMock.Setup(x => x(It.IsAny<HttpContext>()))
                  .ThrowsAsync(exception);
 
@@ -85,11 +85,11 @@ public class GlobalExceptionHandlingMiddlewareTests
 
         // Assert
         context.Response.StatusCode.Should().Be(409);
-        
+
         var responseBody = await GetResponseBodyAsync(context);
-        var problemDetails = JsonSerializer.Deserialize<ProblemDetails>(responseBody, 
+        var problemDetails = JsonSerializer.Deserialize<ProblemDetails>(responseBody,
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-        
+
         problemDetails!.Title.Should().Be("SKU đã tồn tại");
         problemDetails.Status.Should().Be(409);
         problemDetails.Detail.Should().Contain(sku);
@@ -101,7 +101,7 @@ public class GlobalExceptionHandlingMiddlewareTests
         // Arrange
         var context = CreateHttpContext();
         var exception = new ValidationException("Name", "Tên sản phẩm không được để trống");
-        
+
         _nextMock.Setup(x => x(It.IsAny<HttpContext>()))
                  .ThrowsAsync(exception);
 
@@ -110,11 +110,11 @@ public class GlobalExceptionHandlingMiddlewareTests
 
         // Assert
         context.Response.StatusCode.Should().Be(400);
-        
+
         var responseBody = await GetResponseBodyAsync(context);
-        var problemDetails = JsonSerializer.Deserialize<ValidationProblemDetails>(responseBody, 
+        var problemDetails = JsonSerializer.Deserialize<ValidationProblemDetails>(responseBody,
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-        
+
         problemDetails!.Title.Should().Be("Lỗi validation dữ liệu");
         problemDetails.Status.Should().Be(400);
         problemDetails.Errors.Should().HaveCount(1);
@@ -127,7 +127,7 @@ public class GlobalExceptionHandlingMiddlewareTests
         // Arrange
         var context = CreateHttpContext();
         var exception = new ArgumentException("Invalid argument provided");
-        
+
         _nextMock.Setup(x => x(It.IsAny<HttpContext>()))
                  .ThrowsAsync(exception);
 
@@ -136,11 +136,11 @@ public class GlobalExceptionHandlingMiddlewareTests
 
         // Assert
         context.Response.StatusCode.Should().Be(400);
-        
+
         var responseBody = await GetResponseBodyAsync(context);
-        var problemDetails = JsonSerializer.Deserialize<ProblemDetails>(responseBody, 
+        var problemDetails = JsonSerializer.Deserialize<ProblemDetails>(responseBody,
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-        
+
         problemDetails!.Title.Should().Be("Dữ liệu đầu vào không hợp lệ");
         problemDetails.Status.Should().Be(400);
     }
@@ -151,7 +151,7 @@ public class GlobalExceptionHandlingMiddlewareTests
         // Arrange
         var context = CreateHttpContext();
         var exception = new InvalidOperationException("Something went wrong");
-        
+
         _nextMock.Setup(x => x(It.IsAny<HttpContext>()))
                  .ThrowsAsync(exception);
 
@@ -160,11 +160,11 @@ public class GlobalExceptionHandlingMiddlewareTests
 
         // Assert
         context.Response.StatusCode.Should().Be(422); // UnprocessableEntity for InvalidOperationException
-        
+
         var responseBody = await GetResponseBodyAsync(context);
-        var problemDetails = JsonSerializer.Deserialize<ProblemDetails>(responseBody, 
+        var problemDetails = JsonSerializer.Deserialize<ProblemDetails>(responseBody,
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-        
+
         problemDetails!.Title.Should().Be("Thao tác không hợp lệ");
         problemDetails.Status.Should().Be(422);
     }
@@ -175,7 +175,7 @@ public class GlobalExceptionHandlingMiddlewareTests
         // Arrange
         var context = CreateHttpContext();
         var exception = new TimeoutException("Operation timed out");
-        
+
         _nextMock.Setup(x => x(It.IsAny<HttpContext>()))
                  .ThrowsAsync(exception);
 
@@ -184,11 +184,11 @@ public class GlobalExceptionHandlingMiddlewareTests
 
         // Assert
         context.Response.StatusCode.Should().Be(408);
-        
+
         var responseBody = await GetResponseBodyAsync(context);
-        var problemDetails = JsonSerializer.Deserialize<ProblemDetails>(responseBody, 
+        var problemDetails = JsonSerializer.Deserialize<ProblemDetails>(responseBody,
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-        
+
         problemDetails!.Title.Should().Be("Timeout");
         problemDetails.Status.Should().Be(408);
     }
@@ -199,7 +199,7 @@ public class GlobalExceptionHandlingMiddlewareTests
         // Arrange
         var context = CreateHttpContext();
         var exception = new Exception("Test exception");
-        
+
         _nextMock.Setup(x => x(It.IsAny<HttpContext>()))
                  .ThrowsAsync(exception);
 
