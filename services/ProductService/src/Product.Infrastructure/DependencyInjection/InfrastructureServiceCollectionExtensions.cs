@@ -1,9 +1,14 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Product.Domain.Repositories;
 using Product.Infrastructure.Persistence;
 using Product.Infrastructure.Persistence.Repositories;
+using Product.Infrastructure.Services.Caching;
+using Product.Infrastructure.Services.Decorators;
+using Product.Infrastructure.Services.Performance;
 
 namespace Product.Infrastructure.DependencyInjection;
 
@@ -21,7 +26,13 @@ public static class InfrastructureServiceCollectionExtensions
         // Đăng ký Database services
         services.AddDatabaseServices(configuration);
 
-        // Đăng ký Repository implementations
+        // Đăng ký Caching services
+        services.AddCachingServices(configuration);
+
+        // Đăng ký Performance services
+        services.AddPerformanceServices(configuration);
+
+        // Đăng ký Repository implementations với caching decorators
         services.AddRepositories();
 
         // Đăng ký Background services (Outbox Pattern)
@@ -79,13 +90,69 @@ public static class InfrastructureServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Đăng ký Repository implementations
-    /// Domain interfaces → Infrastructure implementations
+    /// Đăng ký Repository implementations với caching decorators
+    /// Domain interfaces → Infrastructure implementations với cache layer
     /// </summary>
     private static IServiceCollection AddRepositories(this IServiceCollection services)
     {
-        services.AddScoped<IProductRepository, ProductRepository>();
-        services.AddScoped<ICategoryRepository, CategoryRepository>();
+        // Base repositories
+        services.AddScoped<ProductRepository>();
+        services.AddScoped<CategoryRepository>();
+
+        // Cached decorators
+        services.AddScoped<IProductRepository>(provider =>
+        {
+            var baseRepo = provider.GetRequiredService<ProductRepository>();
+            var cacheService = provider.GetRequiredService<ICacheService>();
+            var logger = provider.GetRequiredService<ILogger<CachedProductRepository>>();
+            return new CachedProductRepository(baseRepo, cacheService, logger);
+        });
+
+        services.AddScoped<ICategoryRepository>(provider =>
+        {
+            var baseRepo = provider.GetRequiredService<CategoryRepository>();
+            var cacheService = provider.GetRequiredService<ICacheService>();
+            var logger = provider.GetRequiredService<ILogger<CachedCategoryRepository>>();
+            return new CachedCategoryRepository(baseRepo, cacheService, logger);
+        });
+
+        return services;
+    }
+
+    /// <summary>
+    /// Đăng ký Caching services
+    /// Development: MemoryCache, Production: Redis (future)
+    /// </summary>
+    private static IServiceCollection AddCachingServices(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        // Add memory cache
+        services.AddMemoryCache();
+
+        // Register cache service (MemoryCache cho development)
+        services.AddSingleton<ICacheService, MemoryCacheService>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// Đăng ký Performance optimization services
+    /// Query optimization, health checks, monitoring
+    /// </summary>
+    private static IServiceCollection AddPerformanceServices(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        // Configure query optimization với default options
+        services.Configure<QueryOptimizationOptions>(options =>
+        {
+            // Use default values từ class
+        });
+
+        // Register performance services
+        services.AddScoped<IQueryOptimizationService, QueryOptimizationService>();
+        services.AddScoped<IDatabaseHealthService, DatabaseHealthService>();
 
         return services;
     }

@@ -4,7 +4,7 @@ namespace Product.Domain.Exceptions;
 /// Exception khi SKU đã tồn tại trong hệ thống
 /// SKU phải unique để đảm bảo inventory management chính xác
 /// </summary>
-public class ProductSkuAlreadyExistsException : Exception
+public class ProductSkuAlreadyExistsException : DomainException
 {
     public string Sku { get; }
 

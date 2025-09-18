@@ -36,7 +36,9 @@ public class ApiMappingProfile : Profile
             .ForMember(dest => dest.MaxPrice, opt => opt.MapFrom(src => src.MaxPrice))
             .ForMember(dest => dest.OnlyActive, opt => opt.MapFrom(src => src.OnlyActive))
             .ForMember(dest => dest.SortBy, opt => opt.MapFrom(src => src.SortBy))
-            .ForMember(dest => dest.SortDirection, opt => opt.MapFrom(src => src.SortDirection));
+            .ForMember(dest => dest.SortDirection, opt => opt.MapFrom(src => src.SortDirection))
+            .ForMember(dest => dest.IsActive, opt => opt.Ignore()) // Not mapped from request
+            .ForMember(dest => dest.HasStock, opt => opt.Ignore()); // Not mapped from request
 
         // ================================
         // 🔄 API REQUEST TO COMMAND MAPPINGS (CQRS Writes)
@@ -50,19 +52,23 @@ public class ApiMappingProfile : Profile
             .ForMember(dest => dest.PriceAmount, opt => opt.MapFrom(src => src.Price))
             .ForMember(dest => dest.Currency, opt => opt.MapFrom(src => src.Currency))
             .ForMember(dest => dest.CategoryId, opt => opt.MapFrom(src => src.CategoryId))
-            .ForMember(dest => dest.InitialStock, opt => opt.MapFrom(src => src.InitialStock));
+            .ForMember(dest => dest.InitialStock, opt => opt.MapFrom(src => src.InitialStock))
+            .ForMember(dest => dest.CreatedBy, opt => opt.Ignore()); // Set từ authentication context
 
         // UpdateProductRequest → UpdateProductCommand
         CreateMap<UpdateProductRequest, UpdateProductCommand>()
             .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name))
             .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description))
             .ForMember(dest => dest.Category, opt => opt.MapFrom(src => src.Category))
-            .ForMember(dest => dest.Reason, opt => opt.MapFrom(src => src.Reason));
+            .ForMember(dest => dest.Reason, opt => opt.MapFrom(src => src.Reason))
+            .ForMember(dest => dest.ProductId, opt => opt.Ignore()) // Set từ route parameter
+            .ForMember(dest => dest.UpdatedBy, opt => opt.Ignore()); // Set từ authentication context
 
         // BulkUpdatePricesRequest → BulkUpdateProductPricesCommand
         CreateMap<BulkUpdatePricesRequest, BulkUpdateProductPricesCommand>()
             .ForMember(dest => dest.ProductPriceUpdates, opt => opt.MapFrom(src => src.ProductPriceUpdates))
-            .ForMember(dest => dest.Reason, opt => opt.MapFrom(src => src.Reason));
+            .ForMember(dest => dest.Reason, opt => opt.MapFrom(src => src.Reason))
+            .ForMember(dest => dest.UpdatedBy, opt => opt.Ignore()); // Set từ authentication context
 
         // ProductPriceUpdate mapping (API Contract → Application Command)
         CreateMap<Product.Api.Contracts.Products.ProductPriceUpdate, Product.Application.Commands.ProductPriceUpdate>()
@@ -94,7 +100,8 @@ public class ApiMappingProfile : Profile
             .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name))
             .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description))
             .ForMember(dest => dest.DisplayOrder, opt => opt.MapFrom(src => src.DisplayOrder))
-            .ForMember(dest => dest.Reason, opt => opt.MapFrom(src => src.Reason));
+            .ForMember(dest => dest.Reason, opt => opt.MapFrom(src => src.Reason))
+            .ForMember(dest => dest.Id, opt => opt.Ignore()); // Set từ route parameter
 
         // ================================
         // 🔄 DTO TO RESPONSE MAPPINGS (Application → API)
@@ -106,16 +113,18 @@ public class ApiMappingProfile : Profile
             .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name))
             .ForMember(dest => dest.Sku, opt => opt.MapFrom(src => src.Sku))
             .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description))
-            .ForMember(dest => dest.Price, opt => opt.MapFrom(src => new MoneyDto 
-            { 
-                Amount = src.Price, 
-                Currency = src.Currency 
-            }))
+            .ForMember(dest => dest.Price, opt => opt.MapFrom(src => src.Price))
+            .ForMember(dest => dest.Currency, opt => opt.MapFrom(src => src.Currency))
+            .ForMember(dest => dest.DisplayPrice, opt => opt.Ignore()) // Will be computed in custom logic
+            .ForMember(dest => dest.InStock, opt => opt.MapFrom(src => src.StockQuantity > 0))
+            .ForMember(dest => dest.LowStock, opt => opt.Ignore()) // Will be computed in custom logic
             .ForMember(dest => dest.StockQuantity, opt => opt.MapFrom(src => src.StockQuantity))
             .ForMember(dest => dest.CategoryId, opt => opt.MapFrom(src => src.CategoryId))
             .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => src.IsActive))
             .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt))
-            .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => src.UpdatedAt));
+            .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => src.UpdatedAt))
+            .ForMember(dest => dest.CreatedBy, opt => opt.MapFrom(src => src.CreatedBy))
+            .ForMember(dest => dest.UpdatedBy, opt => opt.MapFrom(src => src.UpdatedBy));
 
         // PagedProductResult → PagedProductResponse
         CreateMap<PagedProductResult, PagedProductResponse>()
@@ -126,7 +135,10 @@ public class ApiMappingProfile : Profile
             .ForMember(dest => dest.TotalPages, opt => opt.MapFrom(src => src.TotalPages))
             .ForMember(dest => dest.HasNextPage, opt => opt.MapFrom(src => src.HasNextPage))
             .ForMember(dest => dest.HasPreviousPage, opt => opt.MapFrom(src => src.HasPreviousPage))
-            .ForMember(dest => dest.FilterMetadata, opt => opt.MapFrom(src => src.AppliedFilters));
+            .ForMember(dest => dest.FilterMetadata, opt => opt.MapFrom(src => src.FilterMetadata)); // Map FilterMetadata to FilterMetadata
+
+        // ProductFilterMetadata (Application) → ProductFilterMetadata (API) 
+        CreateMap<Product.Application.DTOs.ProductFilterMetadata, Product.Api.Contracts.Products.ProductFilterMetadata>();
 
         // CategoryDto → CategoryResponse
         CreateMap<CategoryDto, CategoryResponse>()

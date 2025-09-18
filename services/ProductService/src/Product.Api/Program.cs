@@ -250,3 +250,13 @@ if (app.Environment.IsDevelopment())
 }
 
 await app.RunAsync();
+
+// =====================================================
+// 🧪 FOR INTEGRATION TESTING
+// =====================================================
+
+/// <summary>
+/// Program class để support Integration Testing
+/// WebApplicationFactory cần access class này để start test host
+/// </summary>
+public partial class Program { }

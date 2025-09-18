@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics; // ← Thêm using này cho Activity
 using System.Net;
 using System.Text.Json;
+using Product.Domain.Exceptions;
+using Product.Application.Exceptions;
 
 namespace Product.Api.Middleware;
 
@@ -61,7 +63,34 @@ public class GlobalExceptionHandlingMiddleware
 
         var (statusCode, problemDetails) = exception switch
         {
-            // Business Logic Exceptions (từ Domain/Application layers)
+            // Application Layer Exceptions
+            ValidationException validationEx => (
+                HttpStatusCode.BadRequest,
+                CreateValidationProblemDetails(validationEx, context)
+            ),
+
+            // Domain Layer Exceptions (Business Logic)
+            ProductNotFoundException notFoundEx => (
+                HttpStatusCode.NotFound,
+                CreateProblemDetails("Sản phẩm không tồn tại", notFoundEx.Message, context)
+            ),
+
+            ProductSkuAlreadyExistsException duplicateSkuEx => (
+                HttpStatusCode.Conflict,
+                CreateProblemDetails("SKU đã tồn tại", duplicateSkuEx.Message, context)
+            ),
+
+            InvalidStockOperationException stockEx => (
+                HttpStatusCode.UnprocessableEntity,
+                CreateProblemDetails("Thao tác stock không hợp lệ", stockEx.Message, context)
+            ),
+
+            DomainException domainEx => (
+                HttpStatusCode.BadRequest,
+                CreateProblemDetails("Lỗi business logic", domainEx.Message, context)
+            ),
+
+            // Standard .NET Exceptions
             ArgumentException argEx => (
                 HttpStatusCode.BadRequest,
                 CreateProblemDetails("Dữ liệu đầu vào không hợp lệ", argEx.Message, context)
@@ -72,19 +101,20 @@ public class GlobalExceptionHandlingMiddleware
                 CreateProblemDetails("Thao tác không hợp lệ", invalidOpEx.Message, context)
             ),
 
-            KeyNotFoundException notFoundEx => (
+            KeyNotFoundException keyNotFoundEx => (
                 HttpStatusCode.NotFound,
-                CreateProblemDetails("Không tìm thấy", notFoundEx.Message, context)
+                CreateProblemDetails("Không tìm thấy", keyNotFoundEx.Message, context)
             ),
-
-            // TODO: Add custom business exceptions
-            // ProductNotFoundException => (HttpStatusCode.NotFound, ...),
-            // DuplicateSkuException => (HttpStatusCode.Conflict, ...),
 
             // Technical Exceptions (Database, Network, etc.)
             TimeoutException timeoutEx => (
                 HttpStatusCode.RequestTimeout,
                 CreateProblemDetails("Timeout", "Yêu cầu mất quá nhiều thời gian", context)
+            ),
+
+            UnauthorizedAccessException => (
+                HttpStatusCode.Unauthorized,
+                CreateProblemDetails("Không có quyền truy cập", "Bạn không có quyền thực hiện thao tác này", context)
             ),
 
             // Default: Internal Server Error
@@ -127,6 +157,31 @@ public class GlobalExceptionHandlingMiddleware
                 ["timestamp"] = DateTime.UtcNow // ← Fix warning: sử dụng parameter
             }
         };
+    }
+
+    /// <summary>
+    /// Tạo ValidationProblemDetails cho FluentValidation errors
+    /// Structured validation errors cho API clients
+    /// </summary>
+    private static ValidationProblemDetails CreateValidationProblemDetails(
+        ValidationException validationException,
+        HttpContext context)
+    {
+        var problemDetails = new ValidationProblemDetails(validationException.Errors)
+        {
+            Title = "Lỗi validation dữ liệu",
+            Detail = "Một hoặc nhiều trường dữ liệu không hợp lệ",
+            Status = StatusCodes.Status400BadRequest,
+            Instance = context.Request.Path,
+            Type = "https://httpstatuses.com/400",
+            Extensions = new Dictionary<string, object?>
+            {
+                ["traceId"] = Activity.Current?.Id ?? context.TraceIdentifier,
+                ["timestamp"] = DateTime.UtcNow
+            }
+        };
+
+        return problemDetails;
     }
 }
 

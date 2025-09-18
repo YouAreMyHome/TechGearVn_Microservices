@@ -1,0 +1,65 @@
+### Test Mapping Verification - API Calls
+
+# 1. Test Get Products (Empty response expected)
+GET http://localhost:5000/api/Products
+Accept: application/json
+
+###
+
+# 2. Test Get Categories
+GET http://localhost:5000/api/Categories
+Accept: application/json
+
+###
+
+# 3. Test Create Category (to have data for product creation)
+POST http://localhost:5000/api/Categories/root
+Content-Type: application/json
+
+{
+  "name": "Electronics",
+  "slug": "electronics",
+  "description": "Electronic devices and accessories",
+  "displayOrder": 1
+}
+
+###
+
+# 4. Test Create Product (with proper mapping)
+POST http://localhost:5000/api/Products
+Content-Type: application/json
+
+{
+  "name": "Test Product for Mapping",
+  "sku": "PRD-20240918-0001",
+  "description": "Product to test layer mapping",
+  "price": 99.99,
+  "currency": "USD",
+  "initialStock": 10,
+  "categoryId": "{{categoryId}}"
+}
+
+###
+
+# 5. Test Get Products with filters (to test mapping with query params)
+GET http://localhost:5000/api/Products?page=1&pageSize=10&onlyActive=true&sortBy=name&sortDirection=asc
+Accept: application/json
+
+###
+
+# 6. Test Get Product by ID
+GET http://localhost:5000/api/Products/{{productId}}
+Accept: application/json
+
+###
+
+# 7. Test Update Product
+PUT http://localhost:5000/api/Products/{{productId}}
+Content-Type: application/json
+
+{
+  "name": "Updated Test Product",
+  "description": "Updated description to test mapping",
+  "category": "electronics",
+  "reason": "Testing mapping verification"
+}
