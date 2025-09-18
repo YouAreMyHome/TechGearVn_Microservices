@@ -9,7 +9,11 @@ namespace Product.Application.Commands;
 /// - Trigger Domain Events quan trọng
 /// - Ảnh hưởng đến cart, pricing strategy
 /// </summary>
-public record UpdateProductPriceCommand(
-    Guid ProductId,
-    decimal NewPrice,
-    string UpdatedBy) : IRequest;
+public record UpdateProductPriceCommand : IRequest
+{
+    public Guid ProductId { get; init; }
+    public decimal NewPrice { get; init; }
+    public string Currency { get; init; } = "VND";
+    public string UpdatedBy { get; init; } = string.Empty;
+    public string? Reason { get; init; }
+}

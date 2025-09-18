@@ -1,18 +1,14 @@
 using MediatR;
 using Product.Domain.Entities;
-using Product.Domain.Exceptions;
 using Product.Domain.Repositories;
-using ProductEntity = Product.Domain.Entities.Product; // Type alias để tránh conflict
+using Product.Domain.ValueObjects;
 
 namespace Product.Application.Commands.Handlers;
 
 /// <summary>
-/// Handler xử lý Command tạo sản phẩm mới
-/// Orchestrate business logic theo Clean Architecture:
-/// 1. Validate business rules
-/// 2. Gọi Domain Factory method 
-/// 3. Persist thông qua Repository interface
-/// 4. Return ProductId cho client
+/// Handler cho CreateProductCommand
+/// Application Layer: Orchestrate business operation, không chứa business logic
+/// Clean Architecture: Gọi Domain factories và Repository interfaces
 /// </summary>
 public class CreateProductCommandHandler : IRequestHandler<CreateProductCommand, Guid>
 {
@@ -25,35 +21,28 @@ public class CreateProductCommandHandler : IRequestHandler<CreateProductCommand,
 
     public async Task<Guid> Handle(CreateProductCommand request, CancellationToken cancellationToken)
     {
-        // Business rule: Kiểm tra SKU unique trước khi tạo
-        if (!string.IsNullOrWhiteSpace(request.Sku))
-        {
-            var isSkuUnique = await _productRepository.IsSkuUniqueAsync(
-                request.Sku,
-                null, // excludeProductId = null vì đang tạo mới
-                cancellationToken);
+        // BƯỚC 1: Tạo Money Value Object từ primitive parameters
+        // Domain concern: Business validation sẽ được handle trong Money.Create()
+        var price = Money.Create(request.PriceAmount, request.Currency);
 
-            if (!isSkuUnique)
-                throw new InvalidOperationException($"SKU '{request.Sku}' đã tồn tại trong hệ thống");
-        }
-
-        // Gọi Domain Factory method để tạo Product với validation đầy đủ
-        // Sử dụng type alias để tránh namespace conflict
-        var product = ProductEntity.Create(
+        // BƯỚC 2: Gọi Domain Factory Method để tạo Product
+        // Domain logic: Product.Create() sẽ validate business rules và tạo domain events
+        var product = Domain.Entities.Product.Create(
             name: request.Name,
             sku: request.Sku,
             description: request.Description,
-            price: request.Price,
-            currency: request.Currency,
+            price: price,                    // Money Value Object, không phải primitives
             initialStock: request.InitialStock,
             categoryId: request.CategoryId,
-            createdBy: request.CreatedBy);
+            createdBy: request.CreatedBy
+        );
 
-        // Persist thông qua Repository (tuân thủ Dependency Rule)
-        // Infrastructure sẽ handle EF Core SaveChanges và Domain Events
+        // BƯỚC 3: Persist Product qua Repository
+        // Infrastructure concern: Repository sẽ handle EF Core mapping
         await _productRepository.AddAsync(product, cancellationToken);
 
-        // Return ProductId cho client
+        // BƯỚC 4: Return Product ID cho API layer
+        // Application result: API layer sẽ dùng ID này trong response
         return product.Id;
     }
 }

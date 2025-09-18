@@ -19,11 +19,4 @@ public record ProductDto
     public DateTime? UpdatedAt { get; init; }
     public string CreatedBy { get; init; } = string.Empty;
     public string? UpdatedBy { get; init; }
-
-    /// <summary>
-    /// Computed properties cho UI
-    /// </summary>
-    public bool InStock => StockQuantity > 0;
-    public bool LowStock => StockQuantity <= 10;
-    public string DisplayPrice => $"{Price:N0} {Currency}";
 }

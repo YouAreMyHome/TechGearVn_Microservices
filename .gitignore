@@ -414,3 +414,27 @@ README-Tutorial.md
 QUICKSTART.md
 .github
 tutorials
+
+# Environment Variables (SECURITY)
+.env
+.env.*
+!.env.example
+!.env.template
+
+# Database Credentials
+appsettings.Production.json
+**/appsettings.Production.json
+
+# Local Development Settings
+**/appsettings.local.json
+**/launchSettings.json
+
+# Logs
+logs/
+*.log
+
+# EF Core
+**/Migrations/
+
+# VS Code
+.vscode/

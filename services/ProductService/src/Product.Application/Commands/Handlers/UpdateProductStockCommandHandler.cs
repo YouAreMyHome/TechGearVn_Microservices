@@ -1,16 +1,12 @@
 using MediatR;
-using Product.Domain.Exceptions;
 using Product.Domain.Repositories;
 
 namespace Product.Application.Commands.Handlers;
 
 /// <summary>
-/// Handler xử lý Command cập nhật tồn kho sản phẩm
-/// Stock management quan trọng cho:
-/// - Inventory accuracy
-/// - Low stock alerts
-/// - Out of stock handling
-/// - Supply chain optimization
+/// Handler cho UpdateProductStockCommand
+/// Application Layer: Orchestrate stock update business operation
+/// Business logic: Low stock warnings, out of stock events
 /// </summary>
 public class UpdateProductStockCommandHandler : IRequestHandler<UpdateProductStockCommand>
 {
@@ -23,23 +19,30 @@ public class UpdateProductStockCommandHandler : IRequestHandler<UpdateProductSto
 
     public async Task Handle(UpdateProductStockCommand request, CancellationToken cancellationToken)
     {
-        // Lấy Product từ repository
+        // BƯỚC 1: Lấy Product từ Repository
         var product = await _productRepository.GetByIdAsync(request.ProductId, cancellationToken);
-        if (product is null)
-            throw new ProductNotFoundException(request.ProductId);
 
-        // Gọi Domain method để update stock với business validation
+        if (product == null)
+        {
+            throw new ArgumentException($"Không tìm thấy Product với ID: {request.ProductId}");
+        }
+
+        // BƯỚC 2: Gọi Domain Method để update stock
+        // Domain logic: Product.UpdateStock() sẽ validate business rules
+        // Business rules: Non-negative stock, low stock warnings, out of stock events
         product.UpdateStock(
             newQuantity: request.NewQuantity,
             updatedBy: request.UpdatedBy,
-            reason: request.Reason);
+            reason: request.Reason
+        );
 
-        // Lưu thay đổi và publish Domain Events
+        // BƯỚC 3: Persist changes qua Repository
+        // Infrastructure concern: Repository handle EF Core update và domain events
         await _productRepository.UpdateAsync(product, cancellationToken);
 
-        // Domain Events có thể được publish:
-        // - ProductStockChangedEvent (luôn)
-        // - ProductLowStockEvent (nếu <= 10)
-        // - ProductOutOfStockEvent (nếu = 0)
+        // NOTE: Domain Events có thể include:
+        // - ProductStockChangedEvent (always)
+        // - ProductLowStockEvent (if quantity <= 10)
+        // - ProductOutOfStockEvent (if quantity = 0)
     }
 }

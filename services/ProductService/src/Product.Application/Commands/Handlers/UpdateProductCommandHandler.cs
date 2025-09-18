@@ -26,8 +26,8 @@ public class UpdateProductCommandHandler : IRequestHandler<UpdateProductCommand>
 
         // Gọi Domain method để update với business validation
         product.UpdateDetails(
-            name: request.Name,
-            description: request.Description,
+            name: request.Name ?? string.Empty,
+            description: request.Description ?? string.Empty,
             updatedBy: request.UpdatedBy);
 
         // Lưu thay đổi (EF Core sẽ track changes)

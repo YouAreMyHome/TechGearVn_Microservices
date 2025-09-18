@@ -1,128 +1,140 @@
-using ProductEntity = Product.Domain.Entities.Product;
-
 namespace Product.Domain.Repositories;
 
 /// <summary>
 /// Repository interface cho Product Aggregate
-/// Interface này định nghĩa contract cho data access
-/// Infrastructure layer sẽ implement bằng EF Core
-/// Domain không biết gì về database technology
+/// Tuân thủ DDD Clean Architecture: Domain định nghĩa contract, Infrastructure implement
+/// Chứa tất cả operations cần thiết cho Product business logic
+/// Không chứa technical concerns (EF Core, SQL, etc.)
 /// </summary>
 public interface IProductRepository
 {
-    // ============ BASIC CRUD OPERATIONS ============
+    #region Basic CRUD Operations
 
     /// <summary>
-    /// Lấy sản phẩm theo ID
-    /// Trả null nếu không tìm thấy
+    /// Lấy Product theo ID
+    /// Core operation cho single entity retrieval
     /// </summary>
-    Task<ProductEntity?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<Domain.Entities.Product?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Lấy sản phẩm theo SKU (unique identifier)
-    /// SKU là business key quan trọng cho inventory
+    /// Thêm Product mới
+    /// Aggregate Root sẽ được persist với tất cả child entities
     /// </summary>
-    Task<ProductEntity?> GetBySkuAsync(string sku, CancellationToken cancellationToken = default);
+    Task<Domain.Entities.Product> AddAsync(Domain.Entities.Product product, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Lấy tất cả sản phẩm (với pagination)
+    /// Cập nhật Product
+    /// Domain logic sẽ handle business rules trước khi persist
     /// </summary>
-    Task<List<ProductEntity>> GetAllAsync(CancellationToken cancellationToken = default);
+    Task UpdateAsync(Domain.Entities.Product product, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Thêm sản phẩm mới vào repository
-    /// Aggregate Root sẽ có Domain Events được publish
+    /// Xóa Product (soft delete thông qua IsActive flag)
+    /// Business requirement: Không hard delete để preserve audit trail
     /// </summary>
-    Task<ProductEntity> AddAsync(ProductEntity product, CancellationToken cancellationToken = default);
+    Task DeleteAsync(Guid productId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Cập nhật sản phẩm hiện có
-    /// EF Core sẽ track changes và persist
-    /// </summary>
-    Task UpdateAsync(ProductEntity product, CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Xóa sản phẩm (hard delete)
-    /// Thường không dùng, prefer soft delete (deactivate)
-    /// </summary>
-    Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Kiểm tra sản phẩm có tồn tại không
-    /// Dùng cho validation, nhanh hơn GetById
+    /// Kiểm tra Product có tồn tại không
+    /// Optimize cho existence check mà không cần load full entity
     /// </summary>
     Task<bool> ExistsAsync(Guid id, CancellationToken cancellationToken = default);
 
-    // ============ BUSINESS QUERY METHODS ============
+    #endregion
+
+    #region Business Query Operations
 
     /// <summary>
-    /// Lấy sản phẩm theo category
-    /// Quan trọng cho catalog browsing
+    /// Lấy Product theo SKU (business identifier)
+    /// Critical business operation: SKU là unique identifier cho business users
     /// </summary>
-    Task<List<ProductEntity>> GetByCategoryAsync(Guid categoryId, CancellationToken cancellationToken = default);
+    Task<Domain.Entities.Product?> GetBySkuAsync(string sku, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Lấy sản phẩm trong khoảng giá
-    /// Dùng cho price filtering
+    /// Kiểm tra SKU có unique không (cho validation)
+    /// Business rule: SKU phải unique across all products
     /// </summary>
-    Task<List<ProductEntity>> GetByPriceRangeAsync(
-        decimal minPrice,
-        decimal maxPrice,
-        string currency = "VND",
+    Task<bool> IsSkuUniqueAsync(string sku, Guid? excludeProductId = null, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Lấy products với pagination và advanced filtering
+    /// Business use case: Product catalog browsing với performance optimization
+    /// </summary>
+    Task<(List<Domain.Entities.Product> products, int totalCount)> GetProductsPagedAsync(
+        int page,
+        int pageSize,
+        List<Guid>? categoryIds = null,
+        decimal? minPrice = null,
+        decimal? maxPrice = null,
+        string? searchTerm = null,
+        bool onlyActive = true,
+        string sortBy = "name",
+        string sortDirection = "asc",
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Lấy sản phẩm có low stock (cần reorder)
-    /// Critical cho inventory management
+    /// Lấy products có tồn kho thấp
+    /// Business use case: Inventory management alerts
     /// </summary>
-    Task<List<ProductEntity>> GetLowStockProductsAsync(
+    Task<List<Domain.Entities.Product>> GetLowStockProductsAsync(
         int threshold = 10,
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Lấy sản phẩm active (đang bán)
-    /// Chỉ show products available cho customers
+    /// Lấy tất cả Products đang active
+    /// Simple query cho basic listing (không recommend cho production với data lớn)
     /// </summary>
-    Task<List<ProductEntity>> GetActiveProductsAsync(CancellationToken cancellationToken = default);
+    Task<List<Domain.Entities.Product>> GetAllAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Tìm kiếm sản phẩm theo tên
-    /// Cơ bản cho search functionality
+    /// Lấy Products theo CategoryId
+    /// Core business operation cho catalog browsing
     /// </summary>
-    Task<List<ProductEntity>> SearchByNameAsync(
-        string searchTerm,
+    Task<List<Domain.Entities.Product>> GetByCategoryAsync(Guid categoryId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Lấy Products trong khoảng giá
+    /// Business requirement cho price filtering
+    /// </summary>
+    Task<List<Domain.Entities.Product>> GetByPriceRangeAsync(
+        decimal minPrice,
+        decimal maxPrice,
+        string currency,
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Lấy sản phẩm theo list IDs
-    /// Dùng cho cart, wishlist, bulk operations
+    /// Lấy Products đang active (có thể bán)
+    /// Customer-facing operation cho product catalog
     /// </summary>
-    Task<List<ProductEntity>> GetByIdsAsync(
-        IEnumerable<Guid> ids,
-        CancellationToken cancellationToken = default);
-
-    // ============ AGGREGATE METHODS ============
+    Task<List<Domain.Entities.Product>> GetActiveProductsAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Đếm tổng số sản phẩm theo category
-    /// Dùng cho dashboard, reporting
+    /// Search Products theo tên, description, SKU
+    /// Customer product discovery operation
+    /// </summary>
+    Task<List<Domain.Entities.Product>> SearchByNameAsync(string searchTerm, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Lấy Products theo danh sách IDs
+    /// Bulk operations cho cart, order processing
+    /// </summary>
+    Task<List<Domain.Entities.Product>> GetByIdsAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken = default);
+
+    #endregion
+
+    #region Analytics & Reporting
+
+    /// <summary>
+    /// Đếm số lượng Products theo Category
+    /// Analytics operation cho business reporting
     /// </summary>
     Task<int> CountByCategoryAsync(Guid categoryId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Tính tổng giá trị inventory
-    /// Business metric quan trọng
+    /// Tính tổng giá trị inventory theo currency
+    /// Financial reporting operation
     /// </summary>
-    Task<decimal> GetTotalInventoryValueAsync(
-        string currency = "VND",
-        CancellationToken cancellationToken = default);
+    Task<decimal> GetTotalInventoryValueAsync(string currency, CancellationToken cancellationToken = default);
 
-    /// <summary>
-    /// Kiểm tra SKU có unique không (before create/update)
-    /// SKU phải unique trong toàn bộ hệ thống
-    /// </summary>
-    Task<bool> IsSkuUniqueAsync(
-        string sku,
-        Guid? excludeProductId = null,
-        CancellationToken cancellationToken = default);
+    #endregion
 }

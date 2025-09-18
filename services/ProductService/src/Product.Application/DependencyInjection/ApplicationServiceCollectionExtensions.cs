@@ -1,104 +1,38 @@
-using System.Reflection;
 using FluentValidation;
-using MediatR;
 using Microsoft.Extensions.DependencyInjection;
-using Product.Application.Behaviors;
+using Product.Application.Mappings;
+using System.Reflection;
 
 namespace Product.Application.DependencyInjection;
 
 /// <summary>
-/// Extension methods để register Application Layer services
-/// Tuân thủ Clean Architecture: Application layer tự quản lý dependencies của mình
-/// API layer sẽ gọi AddApplication() để setup toàn bộ Application dependencies
+/// Application Layer Dependency Injection Extensions
+/// Đăng ký tất cả Application services vào DI container
+/// Tuân thủ Clean Architecture: Application chỉ depend on Domain
 /// </summary>
 public static class ApplicationServiceCollectionExtensions
 {
-    /// <summary>
-    /// Register tất cả Application Layer dependencies
-    /// Gọi method này từ API layer Program.cs
-    /// </summary>
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
-        // Get Assembly của Application layer để scan các types
-        var applicationAssembly = typeof(ApplicationServiceCollectionExtensions).Assembly;
+        // Đăng ký Assembly hiện tại cho MediatR scanning
+        var applicationAssembly = Assembly.GetExecutingAssembly();
 
-        // Register MediatR với Commands, Queries, Handlers
-        services.AddMediatRServices(applicationAssembly);
-
-        // Register AutoMapper với Profiles
-        services.AddAutoMapperServices(applicationAssembly);
-
-        // Register FluentValidation với Validators
-        services.AddFluentValidationServices(applicationAssembly);
-
-        // Register Pipeline Behaviors cho MediatR
-        services.AddMediatRPipelineBehaviors();
-
-        return services;
-    }
-
-    /// <summary>
-    /// Register MediatR services
-    /// Scan assembly để tìm tất cả IRequestHandler implementations
-    /// </summary>
-    private static IServiceCollection AddMediatRServices(
-        this IServiceCollection services,
-        Assembly assembly)
-    {
-        // Register MediatR với assembly chứa Handlers
+        // MediatR - CQRS Pattern implementation
         services.AddMediatR(config =>
         {
-            // Scan assembly để register Commands, Queries, Handlers
-            config.RegisterServicesFromAssembly(assembly);
+            // Scan assembly để tìm tất cả IRequestHandler implementations
+            config.RegisterServicesFromAssembly(applicationAssembly);
+
+            // TODO: Add pipeline behaviors (Validation, Logging, Performance)
+            // config.AddBehavior<ValidationBehavior<,>>();
+            // config.AddBehavior<LoggingBehavior<,>>();
         });
 
-        return services;
-    }
+        // FluentValidation - Input validation cho Commands và Queries
+        services.AddValidatorsFromAssembly(applicationAssembly);
 
-    /// <summary>
-    /// Register AutoMapper services
-    /// Scan assembly để tìm tất cả Profile implementations
-    /// </summary>
-    private static IServiceCollection AddAutoMapperServices(
-        this IServiceCollection services,
-        Assembly assembly)
-    {
-        // Register AutoMapper với assembly chứa Mapping Profiles
-        services.AddAutoMapper(assembly);
-
-        return services;
-    }
-
-    /// <summary>
-    /// Register FluentValidation services
-    /// Scan assembly để tìm tất cả AbstractValidator implementations
-    /// </summary>
-    private static IServiceCollection AddFluentValidationServices(
-        this IServiceCollection services,
-        Assembly assembly)
-    {
-        // Register tất cả validators trong assembly
-        services.AddValidatorsFromAssembly(assembly);
-
-        // Configure FluentValidation behavior
-        ValidatorOptions.Global.LanguageManager.Enabled = false; // Disable localization
-        ValidatorOptions.Global.DefaultRuleLevelCascadeMode = CascadeMode.Stop; // Stop on first failure
-
-        return services;
-    }
-
-    /// <summary>
-    /// Register MediatR Pipeline Behaviors
-    /// Pipeline Behaviors = Interceptors cho MediatR requests
-    /// Chạy theo thứ tự: Validation → Logging → Handler
-    /// </summary>
-    private static IServiceCollection AddMediatRPipelineBehaviors(this IServiceCollection services)
-    {
-        // Register ValidationBehavior (chạy trước Handler)
-        services.AddScoped(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
-
-        // Register LoggingBehavior (chạy sau Validation, trước Handler)
-        services.AddScoped(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
+        // AutoMapper - Domain Entities ↔ Application DTOs mapping
+        services.AddAutoMapper(typeof(ApplicationMappingProfile));
 
         return services;
     }

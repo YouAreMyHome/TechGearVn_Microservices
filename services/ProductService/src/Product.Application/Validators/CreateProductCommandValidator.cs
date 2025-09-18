@@ -33,7 +33,7 @@ public class CreateProductCommandValidator : AbstractValidator<CreateProductComm
             .WithMessage("Mô tả sản phẩm không được vượt quá 2000 ký tự");
 
         // Price validation
-        RuleFor(x => x.Price)
+        RuleFor(x => x.PriceAmount)
             .GreaterThan(0)
             .WithMessage("Giá sản phẩm phải lớn hơn 0")
             .LessThan(1_000_000_000)
